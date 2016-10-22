@@ -14,6 +14,9 @@
  * @public
  */
 
+// Q1: 如何记录一个请求所经历的时间?
+// Q2: 如何格式化日志格式的?
+
 module.exports = morgan
 module.exports.compile = compile
 module.exports.format = format
@@ -34,7 +37,6 @@ var onHeaders = require('on-headers')
  * Array of CLF month names.
  * @private
  */
-
 var CLF_MONTH = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -44,7 +46,7 @@ var CLF_MONTH = [
  * Default log buffer duration.
  * @private
  */
-
+// 默认日志buffer存放在缓存中的时间
 var DEFAULT_BUFFER_DURATION = 1000
 
 /**
@@ -62,12 +64,14 @@ function morgan (format, options) {
 
   if (format && typeof format === 'object') {
     opts = format
+    // 支持 只传一个值的写法
     fmt = opts.format || 'default'
 
     // smart deprecation message
     deprecate('morgan(options): use morgan(' + (typeof fmt === 'string' ? JSON.stringify(fmt) : 'format') + ', options) instead')
   }
 
+  // format有可能是'', undefined等值
   if (fmt === undefined) {
     deprecate('undefined format: specify a format')
   }
@@ -78,13 +82,13 @@ function morgan (format, options) {
   // check if log entry should be skipped
   var skip = opts.skip || false
 
-  // format function
+  // 通过内置格式化函数类型或者自定义格式化日志函数
   var formatLine = typeof fmt !== 'function'
     ? getFormatFunction(fmt)
     : fmt
 
   // stream
-  var buffer = opts.buffer
+  var buffer = opts.buffer // 标识当条日志存在内存时间
   var stream = opts.stream || process.stdout
 
   // buffering support
@@ -96,7 +100,7 @@ function morgan (format, options) {
       ? DEFAULT_BUFFER_DURATION
       : buffer
 
-    // swap the stream
+    // swap the stream, 创建日志写流
     stream = createBufferStream(stream, interval)
   }
 
@@ -114,11 +118,13 @@ function morgan (format, options) {
     recordStartTime.call(req)
 
     function logRequest () {
+      // skip 可以是一个函数, 根据条件判断是否忽略记录某一条日志
       if (skip !== false && skip(req, res)) {
         debug('skip request')
         return
       }
 
+      // 获取格式化行日志
       var line = formatLine(morgan, req, res)
 
       if (line == null) {
@@ -369,7 +375,7 @@ function clfdate (dateTime) {
  * @return {function}
  * @public
  */
-
+// 
 function compile (format) {
   if (typeof format !== 'string') {
     throw new TypeError('argument format must be a string')
@@ -378,16 +384,21 @@ function compile (format) {
   var fmt = format.replace(/"/g, '\\"')
   var js = '  "use strict"\n  return "' + fmt.replace(/:([-\w]{2,})(?:\[([^\]]+)\])?/g, function (_, name, arg) {
     var tokenArguments = 'req, res'
+    // 例如tokens[req]
     var tokenFunction = 'tokens[' + String(JSON.stringify(name)) + ']'
 
     if (arg !== undefined) {
+      // arg is such as ==> content-length
       tokenArguments += ', ' + String(JSON.stringify(arg))
     }
 
+    // 调用的函数是: getResponseHeader, getUserAgentToken即, morgan.token定义的函数
     return '" +\n    (' + tokenFunction + '(' + tokenArguments + ') || "-") + "'
   }) + '"'
 
   // eslint-disable-next-line no-new-func
+  // 根据js字符串生成一个函数
+  // 返回函数的上下文是morgan
   return new Function('tokens, req, res', js)
 }
 
@@ -398,7 +409,7 @@ function compile (format) {
  * @param {number} interval
  * @public
  */
-
+// 创建缓存流, 间隔interval时间将流发送出去并情况缓存
 function createBufferStream (stream, interval) {
   var buf = []
   var timer = null
@@ -461,7 +472,7 @@ function getFormatFunction (name) {
  * @param {IncomingMessage} req
  * @return {string}
  */
-
+// 获取客户端请求IP
 function getip (req) {
   return req.ip ||
     req._remoteAddress ||
@@ -479,7 +490,7 @@ function getip (req) {
 
 function pad2 (num) {
   var str = String(num)
-
+  // 补齐两位
   return (str.length === 1 ? '0' : '') + str
 }
 
@@ -487,7 +498,7 @@ function pad2 (num) {
  * Record the start time.
  * @private
  */
-
+// 记录请求开始时间
 function recordStartTime () {
   this._startAt = process.hrtime()
   this._startTime = new Date()
