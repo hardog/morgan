@@ -141,9 +141,11 @@ function morgan (format, options) {
       logRequest()
     } else {
       // record response start
+      // 记录res._startAt, res._startTime
       onHeaders(res, recordStartTime)
 
       // log when response finished
+      // 此次响应结束后记录日志
       onFinished(res, logRequest)
     }
 
@@ -238,6 +240,7 @@ morgan.token('response-time', function getResponseTimeToken (req, res, digits) {
   }
 
   // calculate diff
+  // 1纳秒等于1e-6秒
   var ms = (res._startAt[0] - req._startAt[0]) * 1e3 +
     (res._startAt[1] - req._startAt[1]) * 1e-6
 
